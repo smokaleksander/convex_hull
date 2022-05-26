@@ -101,11 +101,11 @@ def rysuj_otoczke(punkty, zbior_cosinusow):
         tytul = 'Otoczką jest punkt o współrzędnych: ' + \
             str(wspolrzedne[0])+', '+str(wspolrzedne[1])
         plt.title(tytul)
-        return 1
-
-    if len(punkty) == 2:
+        # return 1
+    elif len(punkty) == 2:
+        # print(zbior_cosinusow)
         plt.plot(punkty['x'], punkty['y'])
-        tytul = 'Otoczką jest odcinek 01: '
+        tytul = 'Otoczką jest odcinek 0'+str(len(zbior_cosinusow)-1)+': '
         for i, x in enumerate(punkty.values):
             plt.annotate(i, x[0:2])
             wspolrzedne = x[0:2]
@@ -114,39 +114,55 @@ def rysuj_otoczke(punkty, zbior_cosinusow):
                     str(i)+'('+str(wspolrzedne[0])+', '+str(wspolrzedne[1])+')'
             else:
                 tytul = tytul+', ' + \
-                    str(i)+'('+str(wspolrzedne[0])+', '+str(wspolrzedne[1])+')'
+                    str(len(zbior_cosinusow)-1) + \
+                    '('+str(wspolrzedne[0])+', '+str(wspolrzedne[1])+')'
         plt.title(tytul)
-        return 1
+        # return 1
+    elif len(punkty) == 3:
+        lista_punktow = []
+        #plt.plot(punkty['x'], punkty['y'])
+        pierwszy_punkt = punkty.iloc[0]
+        d = [{'x': punkty['x'][0], 'y': punkty['y'][0]}]
+        dodaj_na_koniec = pd.DataFrame(d)
+        linie = pd.concat([punkty, dodaj_na_koniec], ignore_index=True)
+        plt.plot(linie['x'], linie['y'])
+        plt.plot(zbior_cosinusow['x'], zbior_cosinusow['y'], 'o')
 
-    if len(punkty) == 3:
-        plt.plot(punkty['x'], punkty['y'])
         for i, x in enumerate(punkty.values):
             plt.annotate(i, x[0:2])
+            lista_punktow.append(
+                [zbior_cosinusow.iloc[i]['x'], zbior_cosinusow.iloc[i]['y']])
         wspolrzedne = x[0:2]
-        tytul = 'Otoczką jest trojkąt'
+        print(lista_punktow)
+        czy_na_lewo = na_lewo(
+            lista_punktow[-2], lista_punktow[-3], lista_punktow[-1])
+        if czy_na_lewo == True or czy_na_lewo == False:
+            tytul = 'Otoczką jest trójkąt'
+        else:
+            tytul = 'Otoczką jest odcinek'
         plt.title(tytul)
+        # return 1
+    elif len(punkty) > 4:
+        pierwszy_punkt = punkty.iloc[0]
+        d = [{'x': punkty['x'][0], 'y': punkty['y'][0]}]
+        dodaj_na_koniec = pd.DataFrame(d)
+        linie = pd.concat([punkty, dodaj_na_koniec], ignore_index=True)
+        plt.plot(linie['x'], linie['y'])
+        plt.plot(zbior_cosinusow['x'], zbior_cosinusow['y'], 'o')
+        # if np.max(punkty['y'])>np.max(punkty['x']):
+        #    plt.ylim(np.min(punkty['y'])-5, np.max(punkty['y'])+5)
+        #    plt.xlim(np.min(punkty['y'])-5, np.max(punkty['y'])+5)
+        # else:
+        #    plt.ylim(np.min(punkty['x'])-5, np.max(punkty['x'])+5)
+        #    plt.xlim(np.min(punkty['x'])-5, np.max(punkty['x'])+5)
 
-    pierwszy_punkt = punkty.iloc[0]
-    d = [{'x': punkty['x'][0], 'y': punkty['y'][0]}]
-    dodaj_na_koniec = pd.DataFrame(d)
-    linie = pd.concat([punkty, dodaj_na_koniec], ignore_index=True)
-    plt.plot(linie['x'], linie['y'])
-    plt.plot(zbior_cosinusow['x'], zbior_cosinusow['y'], 'o')
+        for i, x in enumerate(punkty.values):
+            print(i, x)
+            plt.annotate(i, x[0:2])
 
-    if np.max(punkty['y']) > np.max(punkty['x']):
-        plt.ylim(np.min(punkty['y'])-5, np.max(punkty['y'])+5)
-        plt.xlim(np.min(punkty['y'])-5, np.max(punkty['y'])+5)
-    else:
-        plt.ylim(np.min(punkty['x'])-5, np.max(punkty['x'])+5)
-        plt.xlim(np.min(punkty['x'])-5, np.max(punkty['x'])+5)
-
-    for i, x in enumerate(punkty.values):
-        print(i, x)
-        plt.annotate(i, x[0:2])
-
-    ilosc_punktow = len(punkty)
-    tytul = 'Otoczką jest wielokąt o ilości boków: '+str(ilosc_punktow)
-    plt.title(tytul)
+        ilosc_punktow = len(punkty)
+        tytul = 'Otoczką jest wielokąt o ilości boków: '+str(ilosc_punktow)
+        plt.title(tytul)
 
     img = io.BytesIO()
     plt.savefig(img, format='png')
@@ -174,6 +190,7 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
             raw_points.append([point[0], point[1]])
     punkty = pd.DataFrame(raw_points, columns=["x", "y"])
     punkty_wykres = rysuj_wykres(punkty)
+
     # sortowanie po x
     posortowane_y = punkty.copy().sort_values(by=['y'], ignore_index=True)
 
@@ -257,37 +274,62 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
             zbior_cosinusow.iloc[i] = zbior_cosinusow.iloc[i-1]
             zbior_cosinusow.iloc[i-1] = pomoc
 
-    # stos próba 3
+   # stos próba 3
 
-    CH = []
-    for i in zbior_cosinusow[0:2].values:
-        CH.append([i[0], i[1]])
+    # sprawdzenie czy nie sa wspoliniowe
+    sprawdzenie = zbior_cosinusow.drop_duplicates(subset=['cos'])
+    sprawdzenie = sprawdzenie.drop_duplicates(subset=['cos'], keep='last')
+    sprawdzenie = sprawdzenie.drop_duplicates(subset=['cos'], keep=False)
+    # print(len(sprawdzenie))
 
-    if len(zbior_cosinusow) > 2:
+    if len(sprawdzenie) > 2:
 
-        CH.append([zbior_cosinusow.iloc[2]['x'], zbior_cosinusow.iloc[2]['y']])
+        CH = []
+        for i in zbior_cosinusow[0:2].values:
+            CH.append([i[0], i[1]])
 
-        print('CH: ', CH)
+        if len(zbior_cosinusow) > 2:
 
-        i = 3
-        n = len(zbior_cosinusow)
+            CH.append([zbior_cosinusow.iloc[2]['x'],
+                      zbior_cosinusow.iloc[2]['y']])
 
-        for i in range(i, n):
+            print('CH: ', CH)
 
-            print(CH, i)
-            czy_na_lewo = na_lewo(CH[-1], CH[-3], CH[-2])
-            while (czy_na_lewo == False or czy_na_lewo == 'blad'):
+            i = 3
+            n = len(zbior_cosinusow)
+            wyniki_na_lewo = []
+
+            for i in range(i, n):
+
+                print(CH, i)
                 czy_na_lewo = na_lewo(CH[-1], CH[-3], CH[-2])
-                if czy_na_lewo == True:
-                    break
-                if(czy_na_lewo != 'blad'):
-                    usuwam = CH.pop(-2)
-                    print('Usuwam ', usuwam)
-                if(czy_na_lewo == 'blad'):
-                    usuwam = CH.pop(-3)
-                    print('Usuwam ', usuwam)
-            CH.append([zbior_cosinusow.iloc[i]['x'],
-                      zbior_cosinusow.iloc[i]['y']])
+                while (czy_na_lewo == False or czy_na_lewo == 'blad'):
+                    print('CH: ', CH)
+                    wyniki_na_lewo.append(czy_na_lewo)
+                    if wyniki_na_lewo[-1] == 'blad':
+                        break
+                    print('wyniki_na_lewo: ', wyniki_na_lewo)
+                    if czy_na_lewo == True:
+                        break
+                    if(czy_na_lewo == False):
+                        usuwam = CH.pop(-2)
+                        print('Usuwam ', usuwam)
+                    if(czy_na_lewo == 'blad'):
+                        usuwam = CH.pop(-3)
+                        print('Usuwam ', usuwam)
+                    czy_na_lewo = na_lewo(CH[-1], CH[-3], CH[-2])
+                CH.append([zbior_cosinusow.iloc[i]['x'],
+                          zbior_cosinusow.iloc[i]['y']])
+
+            # dodatkowe sprawdzenie na koniec
+            czy_na_lewo = na_lewo(CH[-2], CH[-3], CH[-1])
+            if czy_na_lewo == True:
+                usuwam = CH.pop(-2)
+
+    else:
+        CH = []
+        CH.append([np.min(punkty['x']), np.min(punkty['y'])])
+        CH.append([np.max(punkty['x']), np.max(punkty['y'])])
 
     otoczka = pd.DataFrame(CH, columns=['x', 'y'],)
     otoczka = otoczka.drop_duplicates()
