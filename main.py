@@ -334,16 +334,17 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
     otoczka = pd.DataFrame(CH, columns=['x', 'y'],)
     otoczka = otoczka.drop_duplicates()
 
+    zbior_cosiusow_wykres = rysuj_wykres(zbior_cosinusow)
     otoczka_wykres = rysuj_otoczke(otoczka, zbior_cosinusow)
 
     return templates.TemplateResponse("index.html",
                                       {
                                           "request": request,
-                                          "punkty": punkty.to_html(),
+                                          "punkty": punkty.to_html(classes="table table-striped mx-auto w-75", justify='left'),
                                           "punkty_wykres": punkty_wykres,
-                                          "posortowane_punkty": posortowany_zbior.to_html(),
+                                          "posortowane_punkty": posortowany_zbior.to_html(classes="table table-striped mx-auto w-75", justify='left'),
                                           "posortowane_punkty_wykres": posortowane_punkty_wykres,
-                                          "zbior_cosinusow": zbior_cosinusow.to_html(),
+                                          "zbior_cosinusow": zbior_cosinusow.to_html(classes="table table-striped mx-auto w-75", justify='left'),
                                           "otoczka_wykres": otoczka_wykres
                                       }
                                       )
