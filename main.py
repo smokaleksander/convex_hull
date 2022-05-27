@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, Request,  UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -7,6 +7,7 @@ import uvicorn
 import io
 import urllib
 import base64
+from tempfile import NamedTemporaryFile
 
 # import for calculatings
 # from platform import python_version
@@ -120,7 +121,7 @@ def rysuj_otoczke(punkty, zbior_cosinusow):
         # return 1
     elif len(punkty) == 3:
         lista_punktow = []
-        #plt.plot(punkty['x'], punkty['y'])
+        # plt.plot(punkty['x'], punkty['y'])
         pierwszy_punkt = punkty.iloc[0]
         d = [{'x': punkty['x'][0], 'y': punkty['y'][0]}]
         dodaj_na_koniec = pd.DataFrame(d)
@@ -142,7 +143,7 @@ def rysuj_otoczke(punkty, zbior_cosinusow):
             tytul = 'Otoczką jest odcinek'
         plt.title(tytul)
         # return 1
-    elif len(punkty) > 4:
+    elif len(punkty) >= 4:
         pierwszy_punkt = punkty.iloc[0]
         d = [{'x': punkty['x'][0], 'y': punkty['y'][0]}]
         dodaj_na_koniec = pd.DataFrame(d)
@@ -178,17 +179,38 @@ def index(request: Request):
 
 
 @app.post("/")
-def calculate(request: Request, point1: str = Form(...), point2: str = Form(default=None), point3: str = Form(default=None), point4: str = Form(default=None)):
+def calculate(request: Request,
+              point1: str = Form(default=None),
+              point2: str = Form(default=None),
+              point3: str = Form(default=None),
+              point4: str = Form(default=None),
+              filecsv: UploadFile = File(default=None)
+              ):
     """
     calcualte and draw an convex hull
     """
-    raw_points = []
-    for point in [point1, point2, point3, point4]:
-        if point is not None:
-            point = point.split(",")
-            point = [float(point[0]), float(point[1])]
-            raw_points.append([point[0], point[1]])
-    punkty = pd.DataFrame(raw_points, columns=["x", "y"])
+    if point1 is None and filecsv.filename == "":
+        print('no input')
+        return templates.TemplateResponse("index.html", {"request": request, "no_input": "no_input"})
+    elif point1 is not None and filecsv.filename != "":
+        print(filecsv.filename)
+        print('too many inputs')
+        return templates.TemplateResponse("index.html", {"request": request, "too_many_inputs": "too_many_inputs"})
+    elif filecsv.filename != "":
+        print('file')
+        print(filecsv.file)
+        print(filecsv.filename)
+        punkty = pd.read_csv(filecsv.file)
+    elif point1 is not None:
+        # convert inputs to Dataframe
+        raw_points = []
+        for point in [point1, point2, point3, point4]:
+            if point is not None:
+                point = point.split(",")
+                point = [float(point[0]), float(point[1])]
+                raw_points.append([point[0], point[1]])
+        punkty = pd.DataFrame(raw_points, columns=["x", "y"])
+
     punkty_wykres = rysuj_wykres(punkty)
 
     # sortowanie po x
@@ -225,14 +247,14 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
         Xx = i[0]
         Xy = i[1]
 
-        #print('punkty: ',Sx,Sy,Xx,Xy)
+        # print('punkty: ',Sx,Sy,Xx,Xy)
 
         licznik = (Xx-Sx)
         rownanie = (Xx**2+((-2)*Xx*Sx)+Sx**2+Xy**2+((-2)*Xy*Sy)+Sy**2)
         mianownik = math.sqrt(rownanie)
 
         cos_alfa = licznik/mianownik
-        #print('Cosinus:', cos_alfa)
+        # print('Cosinus:', cos_alfa)
         lista_cosinusow.append(cos_alfa)
         cosinusy = pd.DataFrame(lista_cosinusow, columns=['cos'])
 
@@ -252,9 +274,9 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
     # powtorzenia
     # zbior_cosinusow=zbior_cosinusow[zbior_cosinusow['cos']==zbior_cosinusow['cos']]
 
-    #zbior_cosinusow['duplicate'] = zbior_cosinusow.groupby('cos')['cos'].cumcount()
-    #zbior_cosinusow.sort_values(by=['duplicate', 'x'], inplace=True)
-    #df = zbior_cosinusow.duplicated(subset=['cos'])
+    # zbior_cosinusow['duplicate'] = zbior_cosinusow.groupby('cos')['cos'].cumcount()
+    # zbior_cosinusow.sort_values(by=['duplicate', 'x'], inplace=True)
+    # df = zbior_cosinusow.duplicated(subset=['cos'])
     # zbior_cosinusow=zbior_cosinusow.sort_values(by=['cos','C'],ignore_index=True,ascending=False)
     lista_powtorzen = []
 
@@ -263,7 +285,7 @@ def calculate(request: Request, point1: str = Form(...), point2: str = Form(defa
     zbior_cosinusow['cos'] = zbior_cosinusow['cos'].apply(
         lambda x: np.round(x, 6))
 
-    #zbior_cosinusow=zbior_cosinusow['cos'].round(decimals = 2)
+    # zbior_cosinusow=zbior_cosinusow['cos'].round(decimals = 2)
     zbior_cosinusow['duplicate_cos'] = zbior_cosinusow.groupby('cos')[
         'x'].cumcount()
 
