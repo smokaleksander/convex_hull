@@ -201,6 +201,8 @@ def calculate(request: Request,
         print(filecsv.file)
         print(filecsv.filename)
         punkty = pd.read_csv(filecsv.file)
+        if not "x" in punkty.columns and not "y" in punkty.columns:
+            return templates.TemplateResponse("index.html", {"request": request, "bad_csv": "bad_csv"})
     elif point1 is not None:
         # convert inputs to Dataframe
         raw_points = []

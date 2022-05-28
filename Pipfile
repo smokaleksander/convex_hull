@@ -4,13 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "*"
 uvicorn = "*"
 python-multipart = "*"
 jinja2 = "*"
 matplotlib = "*"
 pandas = "*"
 numpy = "*"
+fastapi = "*"
 
 [dev-packages]
 flake8 = "*"
